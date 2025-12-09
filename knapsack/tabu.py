@@ -44,35 +44,44 @@ class TabuSearch(object):
             self.iter_counter += 1
             if not len(sorted_moves) == 0: 
                 candidate_move = sorted_moves.pop(0) 
-                actual_solution = knapsack.value + candidate_move.movement_avaliation
                 # Only execute if movement is valid
                 if knapsack.execute_movement(candidate_move):
                     knapsack.tabu_list.append(candidate_move.reverse())
-                else:
-                    # Movement failed, skip it and continue
-                    continue
-                if actual_solution > best_solution:
-                    elapsed_time = perf_counter() - start_time
-                    # print("Current iter %d (%.2f s), actual solution %d, better solution found at %.2f s with %d" % (self.iter_counter, elapsed_time, actual_solution, time_better - start_time, best_solution))
-                    best_solution = actual_solution
-                    best_solution_moves = deepcopy(knapsack.moves_made)
-                    best_solution_items = deepcopy(knapsack.items)
-                    self.iter_better = self.iter_counter
-                    time_better = perf_counter()
-            else:
-                best_tabu = reduce(lambda x, y: x if x.movement_avaliation > y.movement_avaliation else y, knapsack.tabu_list)
-                if best_tabu.movement_avaliation > 0: # se ele apresentar uma melhora real na solucao atual
-                    actual_solution = knapsack.value + best_tabu.movement_avaliation
+                    # Use the actual value after execution, not the predicted value
+                    actual_solution = knapsack.value
                     if actual_solution > best_solution:
                         elapsed_time = perf_counter() - start_time
+                        # print("Current iter %d (%.2f s), actual solution %d, better solution found at %.2f s with %d" % (self.iter_counter, elapsed_time, actual_solution, time_better - start_time, best_solution))
                         best_solution = actual_solution
                         best_solution_moves = deepcopy(knapsack.moves_made)
                         best_solution_items = deepcopy(knapsack.items)
                         self.iter_better = self.iter_counter
                         time_better = perf_counter()
+                else:
+                    # Movement failed, skip it and continue
+                    continue
+            else:
+                if len(knapsack.tabu_list) == 0:
+                    # No tabu moves available, regenerate neighborhood
+                    solutions = neighborhood_function(knapsack)
+                    sorted_moves = self.sort_moves(solutions)
+                    [sorted_moves.remove(tabu.reverse()) for tabu in knapsack.tabu_list if tabu.reverse() in sorted_moves]
+                    continue
+                best_tabu = reduce(lambda x, y: x if x.movement_avaliation > y.movement_avaliation else y, knapsack.tabu_list)
+                if best_tabu.movement_avaliation > 0: # se ele apresentar uma melhora real na solucao atual
                     # Only execute if movement is valid
-                    if not knapsack.execute_movement(best_tabu):
-                        # Movement failed, skip it
+                    if knapsack.execute_movement(best_tabu):
+                        # Use the actual value after execution, not the predicted value
+                        actual_solution = knapsack.value
+                        if actual_solution > best_solution:
+                            elapsed_time = perf_counter() - start_time
+                            best_solution = actual_solution
+                            best_solution_moves = deepcopy(knapsack.moves_made)
+                            best_solution_items = deepcopy(knapsack.items)
+                            self.iter_better = self.iter_counter
+                            time_better = perf_counter()
+                    # Movement failed, skip it
+                    else:
                         pass
             solutions = neighborhood_function(knapsack)
             sorted_moves = self.sort_moves(solutions)
@@ -83,8 +92,8 @@ class TabuSearch(object):
         knapsack.items = best_solution_items
         knapsack.moves_made = best_solution_moves
 
-        print('Script ran with tabu search for %.2f seconds (%d iterations) and a tabu list with size %d.' % (elapsed_time, self.iter_counter, knapsack.tabu_list.size))
-        print('Ended by time limit (%.2f seconds).' % self.max_time_seconds)
+        # print('Script ran with tabu search for %.2f seconds (%d iterations) and a tabu list with size %d.' % (elapsed_time, self.iter_counter, knapsack.tabu_list.size))
+        # print('Ended by time limit (%.2f seconds).' % self.max_time_seconds)
         return False
 
     def sort_moves(self, moves):

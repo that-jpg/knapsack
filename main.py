@@ -67,7 +67,12 @@ if __name__ == '__main__':
         
         try:
             bag = Knapsack(*bag_from_file(data_file), tabu_list=TabuList(200))
-            bag.optimize(random_add_solution, TabuSearch(5), first_improving_neighborhood)
+            print("first improve") 
+            bag.optimize(random_add_solution, TabuSearch(300), first_improving_neighborhood)
+
+            bag = Knapsack(*bag_from_file(data_file), tabu_list=TabuList(200))
+            print("genetic alg") 
+            bag.optimize(random_add_solution, TabuSearch(300), genetic_algorithm_neighborhood)
         except Exception as e:
             print(f"Error processing {data_file}: {e}")
             continue
